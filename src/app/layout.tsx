@@ -17,10 +17,6 @@ export const metadata: Metadata = {
   description: "Participa en la Ruleta de la Suerte y gana premios increíbles del Algarve. Stand de Turismo del Algarve en FITUR 2026.",
   keywords: ["Algarve", "FITUR", "ruleta", "premios", "turismo", "Portugal"],
   authors: [{ name: "Turismo del Algarve" }],
-  icons: {
-    icon: "/favicon.jpg",
-    apple: "/favicon.jpg",
-  },
   openGraph: {
     title: "Ruleta de la Suerte Algarve",
     description: "Gira la ruleta y gana experiencias únicas en el Algarve",
