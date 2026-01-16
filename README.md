@@ -1,36 +1,232 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ruleta de la Suerte Algarve
 
-## Getting Started
+An interactive prize wheel web application optimized for the Algarve Tourism Stand at FITUR 2025.
 
-First, run the development server:
+## Features
+
+- **Interactive prize wheel** with smooth animations and sound effects
+- **Weighted prize system** that adjusts probabilities in real-time
+- **Session management** with scheduled time slots
+- **Admin dashboard** protected with PIN access
+- **Data persistence** using localStorage
+- **Responsive design** optimized for mobile and tablet
+- **Celebration effects** with confetti for winners
+- **Countdown timer** between sessions
+
+## Prize Structure
+
+| Prize | Display Name | Initial Quantity |
+|-------|-------------|------------------|
+| Voucher (high value) | Experiencia | 9 |
+| Tasting (medium value) | Saboreo | 83 |
+| Surprise (freebie) | Regalos | 1,298 |
+
+## Session Schedule
+
+### Saturday (5 vouchers target)
+- 11:00 - 12:00 (2 vouchers)
+- 13:00 - 14:00 (1 voucher)
+- 16:00 - 17:00 (1 voucher)
+- 18:00 - 19:00 (1 voucher)
+
+### Sunday (4 vouchers target)
+- 11:00 - 12:00 (1 voucher)
+- 13:00 - 14:00 (1 voucher)
+- 16:00 - 17:00 (1 voucher)
+- 17:00 - 18:00 (1 voucher)
+
+## Installation
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Setup
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd ruleta
+
+# Install dependencies
+npm install
+
+# Run in development mode
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usage
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### User Panel (/)
+1. Navigate to the main URL
+2. Wait for a session to start or watch the countdown timer
+3. When session is active, press "GIRAR" (Spin) to participate
+4. Show the prize message to stand staff
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Admin Panel (/admin)
+1. Navigate to `/admin`
+2. Enter PIN: `2025`
+3. Select event day (Saturday/Sunday)
+4. Start/end sessions manually
+5. Adjust inventory if needed
+6. Export data for analysis
 
-## Learn More
+### Changing the Admin PIN
+Edit `src/store/gameStore.ts` and modify the `ADMIN_PIN` constant.
 
-To learn more about Next.js, take a look at the following resources:
+## Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Vercel (Recommended)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Push code to GitHub/GitLab/Bitbucket
+2. Connect repository at [vercel.com](https://vercel.com)
+3. Click "Deploy"
+4. Application will be available at the provided URL
 
-## Deploy on Vercel
+```bash
+# Or using Vercel CLI
+npm i -g vercel
+vercel
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Netlify
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Create a `netlify.toml` file in the root:
+
+```toml
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+```
+
+2. Deploy from Netlify dashboard or CLI:
+
+```bash
+npm i -g netlify-cli
+netlify deploy --prod
+```
+
+### Docker
+
+```dockerfile
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV production
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+## Configuration
+
+### Environment Variables (optional)
+
+Create a `.env.local` file:
+
+```env
+# Application base URL
+NEXT_PUBLIC_BASE_URL=https://your-domain.com
+
+# Custom admin PIN (default: 2025)
+ADMIN_PIN=your-custom-pin
+```
+
+### Color Customization
+
+Brand colors are defined in `src/app/globals.css`:
+
+```css
+:root {
+  --algarve-orange: #E85D04;  /* Algarve orange */
+  --algarve-blue: #0077B6;     /* Ocean blue */
+  --algarve-gold: #FFD700;     /* Prize gold */
+}
+```
+
+## Troubleshooting
+
+### Wheel doesn't spin
+- Verify a session is active in the admin panel
+- Check that inventory is not empty
+- Make sure event day is selected
+
+### Sounds don't work
+- Browsers require user interaction before playing audio
+- Ensure device is not in silent mode
+
+### Data doesn't persist
+- Verify localStorage is enabled in the browser
+- In incognito mode, data is lost when window closes
+
+### Performance issues on slow WiFi
+- Application works fully offline once loaded
+- Data is saved locally, no constant connection required
+
+## Project Structure
+
+```
+ruleta/
+├── src/
+│   ├── app/
+│   │   ├── admin/
+│   │   │   └── page.tsx      # Admin dashboard
+│   │   ├── globals.css       # Global styles
+│   │   ├── layout.tsx        # Main layout
+│   │   └── page.tsx          # Main page
+│   ├── components/
+│   │   ├── AdminDashboard.tsx
+│   │   ├── CountdownTimer.tsx
+│   │   ├── GamePage.tsx
+│   │   ├── PrizeWheel.tsx
+│   │   ├── SessionStatus.tsx
+│   │   ├── SpinButton.tsx
+│   │   └── WinModal.tsx
+│   ├── hooks/
+│   │   └── useSoundEffects.ts
+│   ├── store/
+│   │   └── gameStore.ts      # Global state (Zustand)
+│   ├── types/
+│   │   └── index.ts
+│   └── utils/
+│       ├── prizeLogic.ts     # Prize selection logic
+│       └── sessionManager.ts # Session management
+├── public/
+├── package.json
+└── README.md
+```
+
+## Tech Stack
+
+- **Next.js 16** - React framework
+- **TypeScript** - Static typing
+- **Tailwind CSS** - Styling
+- **Zustand** - State management
+- **canvas-confetti** - Celebration effects
+- **Web Audio API** - Sound effects
+
+## License
+
+Developed for Algarve Tourism - FITUR 2025.
+
+## Support
+
+For technical support during the event, contact the development team.
