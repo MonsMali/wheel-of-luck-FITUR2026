@@ -13,10 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ruleta de la Suerte Algarve | FITUR 2025",
-  description: "Participa en la Ruleta de la Suerte y gana premios increíbles del Algarve. Stand de Turismo del Algarve en FITUR 2025.",
+  title: "Ruleta de la Suerte Algarve | FITUR 2026",
+  description: "Participa en la Ruleta de la Suerte y gana premios increíbles del Algarve. Stand de Turismo del Algarve en FITUR 2026.",
   keywords: ["Algarve", "FITUR", "ruleta", "premios", "turismo", "Portugal"],
   authors: [{ name: "Turismo del Algarve" }],
+  icons: {
+    icon: "/favicon.jpg",
+    apple: "/favicon.jpg",
+  },
   openGraph: {
     title: "Ruleta de la Suerte Algarve",
     description: "Gira la ruleta y gana experiencias únicas en el Algarve",
@@ -45,8 +49,6 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
