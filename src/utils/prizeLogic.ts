@@ -92,23 +92,56 @@ const TIME_BOOST_THRESHOLD = 0.6;    // Start boosting at 60% of session time
 const TIME_URGENT_THRESHOLD = 0.8;   // Urgent boost at 80% of session time
 const TIME_FORCE_THRESHOLD = 0.9;    // Force voucher at 90% of session time
 
-// Calculate how much of the session time has elapsed (0 to 1)
-// Returns -1 if we're outside the session time window (before start or after end)
-function getSessionTimeProgress(session: Session): number {
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
+// Spain timezone offset from UTC (CET = UTC+1, CEST = UTC+2)
+// FITUR 2025 is in January, so CET (UTC+1) applies
+const SPAIN_TIMEZONE_OFFSET_HOURS = 1;
 
-  const sessionStart = new Date(`${today}T${session.startTime}:00`);
-  const sessionEnd = new Date(`${today}T${session.endTime}:00`);
+// Get current time in Spain
+function getSpainTime(): Date {
+  const now = new Date();
+  // Get UTC time, then add Spain offset
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utcTime + (SPAIN_TIMEZONE_OFFSET_HOURS * 3600000));
+}
+
+// Check if current day (in Spain time) matches the session day
+function isCorrectDayForSession(session: Session): boolean {
+  const spainNow = getSpainTime();
+  const dayOfWeek = spainNow.getDay(); // 0 = Sunday, 6 = Saturday
+
+  if (session.day === 'saturday' && dayOfWeek === 6) return true;
+  if (session.day === 'sunday' && dayOfWeek === 0) return true;
+  return false;
+}
+
+// Calculate how much of the session time has elapsed (0 to 1)
+// Returns -1 if we're outside the session time window
+function getSessionTimeProgress(session: Session): number {
+  // First check if it's the correct day for this session
+  if (!isCorrectDayForSession(session)) {
+    return -1; // Not the right day, skip time-based adjustments
+  }
+
+  const spainNow = getSpainTime();
+  const today = spainNow.toISOString().split('T')[0];
+
+  const [startHour, startMin] = session.startTime.split(':').map(Number);
+  const [endHour, endMin] = session.endTime.split(':').map(Number);
+
+  // Create session times in Spain timezone
+  const sessionStart = new Date(spainNow);
+  sessionStart.setHours(startHour, startMin, 0, 0);
+
+  const sessionEnd = new Date(spainNow);
+  sessionEnd.setHours(endHour, endMin, 0, 0);
 
   // If we're before the session starts or after it ends, return -1
-  // This means time-based adjustments won't apply outside session hours
-  if (now < sessionStart || now > sessionEnd) {
+  if (spainNow < sessionStart || spainNow > sessionEnd) {
     return -1;
   }
 
   const sessionDuration = sessionEnd.getTime() - sessionStart.getTime();
-  const elapsed = now.getTime() - sessionStart.getTime();
+  const elapsed = spainNow.getTime() - sessionStart.getTime();
 
   return Math.max(0, Math.min(1, elapsed / sessionDuration));
 }
