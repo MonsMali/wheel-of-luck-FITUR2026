@@ -96,6 +96,9 @@ const TIME_FORCE_THRESHOLD = 0.9;    // Force voucher at 90% of session time
 // FITUR 2025 is in January, so CET (UTC+1) applies
 const SPAIN_TIMEZONE_OFFSET_HOURS = 1;
 
+// Buffer for session start/end times (accounts for early starts or delays)
+const SESSION_TIME_BUFFER_MINUTES = 5;
+
 // Get current time in Spain
 function getSpainTime(): Date {
   const now = new Date();
@@ -135,8 +138,13 @@ function getSessionTimeProgress(session: Session): number {
   const sessionEnd = new Date(spainNow);
   sessionEnd.setHours(endHour, endMin, 0, 0);
 
-  // If we're before the session starts or after it ends, return -1
-  if (spainNow < sessionStart || spainNow > sessionEnd) {
+  // Add buffer for early starts / late ends
+  const bufferMs = SESSION_TIME_BUFFER_MINUTES * 60 * 1000;
+  const sessionStartWithBuffer = new Date(sessionStart.getTime() - bufferMs);
+  const sessionEndWithBuffer = new Date(sessionEnd.getTime() + bufferMs);
+
+  // If we're before the session starts or after it ends (with buffer), return -1
+  if (spainNow < sessionStartWithBuffer || spainNow > sessionEndWithBuffer) {
     return -1;
   }
 
