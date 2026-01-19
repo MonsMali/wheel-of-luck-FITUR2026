@@ -63,14 +63,14 @@ export function calculateWeights(
       voucherWeight = currentSession.day === 'saturday' ? 60 : 50;
 
       // If session really needs vouchers (running low), increase slightly
-      // But never more than 1.5% probability
-      if (remainingVouchersForSession >= currentSession.targetVouchers) {
-        // Haven't given any vouchers yet, keep probability low
-        voucherWeight = voucherWeight;
-      } else if (remainingVouchersForSession > 0) {
+      if (remainingVouchersForSession > 0 && remainingVouchersForSession < currentSession.targetVouchers) {
         // Need to catch up, increase slightly
-        voucherWeight = Math.min(voucherWeight * 1.5, 150);
+        voucherWeight = voucherWeight * 1.5;
       }
+
+      // TIME-BASED BOOST: Increase probability as session time runs out
+      const { multiplier } = getVoucherBoostMultiplier(currentSession, remainingVouchersForSession);
+      voucherWeight = Math.min(voucherWeight * multiplier, 1500); // Cap at ~15% max probability
     }
   }
 
@@ -87,6 +87,63 @@ const EXPECTED_SPINS_PER_SESSION = 175;
 // After this many spins without meeting voucher target, force a voucher
 const VOUCHER_GUARANTEE_THRESHOLD = 0.75; // 75% of expected session spins
 
+// Time-based thresholds for dynamic probability adjustment
+const TIME_BOOST_THRESHOLD = 0.6;    // Start boosting at 60% of session time
+const TIME_URGENT_THRESHOLD = 0.8;   // Urgent boost at 80% of session time
+const TIME_FORCE_THRESHOLD = 0.9;    // Force voucher at 90% of session time
+
+// Calculate how much of the session time has elapsed (0 to 1)
+function getSessionTimeProgress(session: Session): number {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+
+  const [startHour, startMin] = session.startTime.split(':').map(Number);
+  const [endHour, endMin] = session.endTime.split(':').map(Number);
+
+  const sessionStart = new Date(`${today}T${session.startTime}:00`);
+  const sessionEnd = new Date(`${today}T${session.endTime}:00`);
+
+  const sessionDuration = sessionEnd.getTime() - sessionStart.getTime();
+  const elapsed = now.getTime() - sessionStart.getTime();
+
+  return Math.max(0, Math.min(1, elapsed / sessionDuration));
+}
+
+// Calculate dynamic voucher probability boost based on time and need
+function getVoucherBoostMultiplier(
+  session: Session,
+  vouchersNeeded: number
+): { multiplier: number; forceVoucher: boolean } {
+  const timeProgress = getSessionTimeProgress(session);
+
+  // No vouchers needed, no boost
+  if (vouchersNeeded <= 0) {
+    return { multiplier: 1, forceVoucher: false };
+  }
+
+  // Force voucher if we're at 90%+ of session time and still need vouchers
+  if (timeProgress >= TIME_FORCE_THRESHOLD) {
+    console.log(`Time-based force: ${Math.round(timeProgress * 100)}% of session, need ${vouchersNeeded} vouchers`);
+    return { multiplier: 1, forceVoucher: true };
+  }
+
+  // Urgent boost at 80%+ (5x probability)
+  if (timeProgress >= TIME_URGENT_THRESHOLD) {
+    const urgentMultiplier = 5 * vouchersNeeded;
+    console.log(`Urgent boost: ${Math.round(timeProgress * 100)}% of session, ${urgentMultiplier}x multiplier`);
+    return { multiplier: urgentMultiplier, forceVoucher: false };
+  }
+
+  // Normal boost at 60%+ (2x probability)
+  if (timeProgress >= TIME_BOOST_THRESHOLD) {
+    const boostMultiplier = 2 * vouchersNeeded;
+    console.log(`Time boost: ${Math.round(timeProgress * 100)}% of session, ${boostMultiplier}x multiplier`);
+    return { multiplier: boostMultiplier, forceVoucher: false };
+  }
+
+  return { multiplier: 1, forceVoucher: false };
+}
+
 export function selectPrize(
   inventory: PrizeInventory,
   currentSession: Session | null,
@@ -98,11 +155,18 @@ export function selectPrize(
     return null;
   }
 
-  // GUARANTEE MECHANISM: Force voucher if session needs it and we're running low on time
+  // GUARANTEE MECHANISM: Force voucher if session needs it and we're running low on time/spins
   if (currentSession && inventory.voucher > 0) {
     const vouchersNeeded = currentSession.targetVouchers - currentSession.vouchersAwarded;
 
     if (vouchersNeeded > 0) {
+      // TIME-BASED CHECK: Force voucher if session time is almost up
+      const { forceVoucher } = getVoucherBoostMultiplier(currentSession, vouchersNeeded);
+      if (forceVoucher) {
+        return PRIZES.find(p => p.type === 'voucher')!;
+      }
+
+      // SPIN-BASED CHECK: Force voucher if we've had many spins without meeting target
       // Calculate threshold based on how many vouchers still needed
       // If we need 2 vouchers, first should come by 50% mark, second by 75%
       const thresholdPerVoucher = EXPECTED_SPINS_PER_SESSION * VOUCHER_GUARANTEE_THRESHOLD / currentSession.targetVouchers;
@@ -110,7 +174,7 @@ export function selectPrize(
 
       // Force a voucher if we've passed the threshold
       if (sessionSpinCount >= spinThreshold) {
-        console.log(`Forcing voucher: spin ${sessionSpinCount}, threshold ${spinThreshold}, needed ${vouchersNeeded}`);
+        console.log(`Spin-based force: spin ${sessionSpinCount}, threshold ${spinThreshold}, needed ${vouchersNeeded}`);
         return PRIZES.find(p => p.type === 'voucher')!;
       }
     }
