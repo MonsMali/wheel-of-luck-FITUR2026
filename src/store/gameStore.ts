@@ -26,39 +26,43 @@ const SESSIONS: Session[] = [
 
 const STORAGE_KEY = 'ruleta-algarve-state';
 
-// Debounce helper for server sync
-let syncTimeout: NodeJS.Timeout | null = null;
-const SYNC_DEBOUNCE_MS = 500;
+// Track if we're currently saving to prevent load overwriting save
+let isSaving = false;
+let savePromise: Promise<void> | null = null;
 
-// Sync state to Vercel KV (debounced)
+// Sync state to Vercel KV (immediate, not debounced - we need consistency)
 const syncToServer = async (state: {
   inventory: PrizeInventory;
   sessions: Session[];
   spinHistory: SpinRecord[];
   eventDay: 'saturday' | 'sunday' | null;
-}) => {
-  if (syncTimeout) clearTimeout(syncTimeout);
-
-  syncTimeout = setTimeout(async () => {
-    try {
-      await fetch('/api/state', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state),
-      });
-    } catch (error) {
-      console.error('Error syncing to server:', error);
-    }
-  }, SYNC_DEBOUNCE_MS);
+}): Promise<void> => {
+  isSaving = true;
+  try {
+    await fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state),
+    });
+  } catch (error) {
+    console.error('Error syncing to server:', error);
+  } finally {
+    isSaving = false;
+  }
 };
 
 // Load state from Vercel KV
-const loadFromServer = async (): Promise<{
+const fetchFromServer = async (): Promise<{
   inventory: PrizeInventory;
   sessions: Session[];
   spinHistory: SpinRecord[];
   eventDay: 'saturday' | 'sunday' | null;
 } | null> => {
+  // Don't load while saving - would cause race condition
+  if (isSaving) {
+    return null;
+  }
+
   try {
     const response = await fetch('/api/state');
     const result = await response.json();
@@ -201,10 +205,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  // Load from server (Vercel KV) - call this on initial page load
+  // Load from server (Vercel KV) - call this on initial page load only
   loadFromServer: async () => {
-    const serverState = await loadFromServer();
-    if (serverState) {
+    const serverState = await fetchFromServer();
+    if (!serverState) return;
+
+    const currentState = get();
+
+    // Only update from server if server has MORE data (more spins = more recent)
+    // This prevents overwriting local state with stale server data
+    const serverSpins = serverState.spinHistory?.length || 0;
+    const localSpins = currentState.spinHistory?.length || 0;
+
+    if (serverSpins >= localSpins) {
       set({
         inventory: serverState.inventory || { ...INITIAL_INVENTORY },
         sessions: serverState.sessions || SESSIONS,
@@ -235,7 +248,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       console.error('Error saving state:', e);
     }
 
-    // Sync to Vercel KV (debounced, persistent)
-    syncToServer(stateToSave);
+    // Sync to Vercel KV immediately (no debounce - need consistency)
+    savePromise = syncToServer(stateToSave);
   },
 }));

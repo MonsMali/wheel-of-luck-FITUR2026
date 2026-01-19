@@ -34,7 +34,8 @@ export default function AdminDashboard() {
     // First load from localStorage (fast)
     loadState();
 
-    // Then load from server (authoritative, handles device changes/refreshes)
+    // Then load from server ONCE (authoritative, handles device changes/refreshes)
+    // This runs only on initial mount - not continuously to avoid race conditions
     loadFromServer();
 
     // Listen for localStorage changes from other tabs (main game page)
@@ -51,15 +52,12 @@ export default function AdminDashboard() {
       loadState();
     }, 1000);
 
-    // Poll server every 5 seconds for cross-device updates
-    const serverPollInterval = setInterval(() => {
-      loadFromServer();
-    }, 5000);
+    // Note: We don't continuously poll the server to avoid race conditions.
+    // For cross-device sync, refresh the page or use the manual sync button.
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(pollInterval);
-      clearInterval(serverPollInterval);
     };
   }, [loadState, loadFromServer]);
 
@@ -309,6 +307,12 @@ export default function AdminDashboard() {
 
         {/* Actions */}
         <div className="flex gap-4 flex-wrap">
+          <button
+            onClick={() => loadFromServer()}
+            className="px-6 py-3 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors"
+          >
+            Sincronizar desde servidor
+          </button>
           <button
             onClick={exportData}
             className="px-6 py-3 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors"
