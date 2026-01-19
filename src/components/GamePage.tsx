@@ -1,17 +1,23 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/gameStore';
 import { selectPrize } from '@/utils/prizeLogic';
 import { findCurrentSession } from '@/utils/sessionManager';
 import PrizeWheel from './PrizeWheel';
-import WinModal from './WinModal';
 import SpinButton from './SpinButton';
 import CountdownTimer from './CountdownTimer';
 import SessionStatus from './SessionStatus';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { Prize, SpinRecord } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+
+// Dynamic import - WinModal only loads after a win (reduces initial bundle)
+const WinModal = dynamic(() => import('./WinModal'), {
+  ssr: false,
+  loading: () => null,
+});
 
 // Rate limiting - minimum time between spins (in ms)
 const MIN_SPIN_INTERVAL = 6000;
@@ -31,6 +37,7 @@ export default function GamePage() {
     addSpinRecord,
     incrementSessionVoucher,
     loadState,
+    loadFromServer,
     spinHistory,
   } = useGameStore();
 
@@ -44,7 +51,11 @@ export default function GamePage() {
 
   // Load saved state on mount and listen for changes from other tabs
   useEffect(() => {
+    // First load from localStorage (fast)
     loadState();
+
+    // Then load from server (authoritative, handles device changes/refreshes)
+    loadFromServer();
 
     // Listen for localStorage changes from other tabs (admin panel)
     const handleStorageChange = (e: StorageEvent) => {
@@ -55,7 +66,7 @@ export default function GamePage() {
 
     window.addEventListener('storage', handleStorageChange);
 
-    // Also poll for changes every 2 seconds as backup
+    // Poll localStorage for changes every 2 seconds (for same-device sync)
     const pollInterval = setInterval(() => {
       loadState();
     }, 2000);
@@ -64,7 +75,7 @@ export default function GamePage() {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(pollInterval);
     };
-  }, [loadState]);
+  }, [loadState, loadFromServer]);
 
   // Check session status periodically
   useEffect(() => {

@@ -24,7 +24,10 @@ export default function WinModal({ prize, isOpen, onClose }: WinModalProps) {
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && canvasRef.current) {
+    // Respect user preference for reduced motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (isOpen && canvasRef.current && !prefersReducedMotion) {
       import('canvas-confetti').then((confettiModule) => {
         const confetti = confettiModule.create(canvasRef.current!, {
           resize: true,

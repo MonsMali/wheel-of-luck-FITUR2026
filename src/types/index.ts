@@ -62,6 +62,7 @@ export interface GameStore extends GameState {
   setEventDay: (day: 'saturday' | 'sunday') => void;
   resetInventory: () => void;
   loadState: () => void;
+  loadFromServer: () => Promise<void>;
   saveState: () => void;
   incrementSessionVoucher: (sessionId: string) => void;
   adjustInventory: (type: PrizeType, amount: number) => void;

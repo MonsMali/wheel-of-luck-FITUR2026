@@ -15,11 +15,11 @@ export default function SpinButton({ onClick, disabled, isSpinning }: SpinButton
       disabled={disabled || isSpinning}
       className={`
         relative px-12 py-5 rounded-full text-2xl font-bold
-        transition-all duration-300 transform
+        transition-all duration-300 transform touch-manipulation
         ${disabled || isSpinning
           ? 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
           : 'bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white hover:scale-110 hover:shadow-2xl active:scale-95'}
-        shadow-lg
+        shadow-lg select-none
       `}
     >
       {/* Glow effect */}

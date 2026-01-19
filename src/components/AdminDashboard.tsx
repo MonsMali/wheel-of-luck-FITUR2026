@@ -22,6 +22,7 @@ export default function AdminDashboard() {
     adjustInventory,
     spinHistory,
     loadState,
+    loadFromServer,
   } = useGameStore();
 
   const [pin, setPin] = useState('');
@@ -30,7 +31,11 @@ export default function AdminDashboard() {
 
   // Auto-refresh: poll localStorage every second to see spin updates in real-time
   useEffect(() => {
+    // First load from localStorage (fast)
     loadState();
+
+    // Then load from server (authoritative, handles device changes/refreshes)
+    loadFromServer();
 
     // Listen for localStorage changes from other tabs (main game page)
     const handleStorageChange = (e: StorageEvent) => {
@@ -41,16 +46,22 @@ export default function AdminDashboard() {
 
     window.addEventListener('storage', handleStorageChange);
 
-    // Poll every second for real-time updates
+    // Poll localStorage every second for real-time updates (same device)
     const pollInterval = setInterval(() => {
       loadState();
     }, 1000);
 
+    // Poll server every 5 seconds for cross-device updates
+    const serverPollInterval = setInterval(() => {
+      loadFromServer();
+    }, 5000);
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(pollInterval);
+      clearInterval(serverPollInterval);
     };
-  }, [loadState]);
+  }, [loadState, loadFromServer]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

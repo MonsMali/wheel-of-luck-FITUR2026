@@ -26,6 +26,51 @@ const SESSIONS: Session[] = [
 
 const STORAGE_KEY = 'ruleta-algarve-state';
 
+// Debounce helper for server sync
+let syncTimeout: NodeJS.Timeout | null = null;
+const SYNC_DEBOUNCE_MS = 500;
+
+// Sync state to Vercel KV (debounced)
+const syncToServer = async (state: {
+  inventory: PrizeInventory;
+  sessions: Session[];
+  spinHistory: SpinRecord[];
+  eventDay: 'saturday' | 'sunday' | null;
+}) => {
+  if (syncTimeout) clearTimeout(syncTimeout);
+
+  syncTimeout = setTimeout(async () => {
+    try {
+      await fetch('/api/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state),
+      });
+    } catch (error) {
+      console.error('Error syncing to server:', error);
+    }
+  }, SYNC_DEBOUNCE_MS);
+};
+
+// Load state from Vercel KV
+const loadFromServer = async (): Promise<{
+  inventory: PrizeInventory;
+  sessions: Session[];
+  spinHistory: SpinRecord[];
+  eventDay: 'saturday' | 'sunday' | null;
+} | null> => {
+  try {
+    const response = await fetch('/api/state');
+    const result = await response.json();
+    if (result.success && result.data) {
+      return result.data;
+    }
+  } catch (error) {
+    console.error('Error loading from server:', error);
+  }
+  return null;
+};
+
 export const useGameStore = create<GameStore>((set, get) => ({
   inventory: { ...INITIAL_INVENTORY },
   initialInventory: { ...INITIAL_INVENTORY },
@@ -156,22 +201,41 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
+  // Load from server (Vercel KV) - call this on initial page load
+  loadFromServer: async () => {
+    const serverState = await loadFromServer();
+    if (serverState) {
+      set({
+        inventory: serverState.inventory || { ...INITIAL_INVENTORY },
+        sessions: serverState.sessions || SESSIONS,
+        spinHistory: serverState.spinHistory || [],
+        eventDay: serverState.eventDay || null,
+      });
+      // Also update localStorage to keep them in sync
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(serverState));
+        } catch (e) {
+          console.error('Error updating localStorage from server:', e);
+        }
+      }
+    }
+  },
+
   saveState: () => {
     if (typeof window === 'undefined') return;
 
     const { inventory, sessions, spinHistory, eventDay } = get();
+    const stateToSave = { inventory, sessions, spinHistory, eventDay };
+
+    // Save to localStorage (fast, local)
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          inventory,
-          sessions,
-          spinHistory,
-          eventDay,
-        })
-      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch (e) {
       console.error('Error saving state:', e);
     }
+
+    // Sync to Vercel KV (debounced, persistent)
+    syncToServer(stateToSave);
   },
 }));
