@@ -93,15 +93,19 @@ const TIME_URGENT_THRESHOLD = 0.8;   // Urgent boost at 80% of session time
 const TIME_FORCE_THRESHOLD = 0.9;    // Force voucher at 90% of session time
 
 // Calculate how much of the session time has elapsed (0 to 1)
+// Returns -1 if we're outside the session time window (before start or after end)
 function getSessionTimeProgress(session: Session): number {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
 
-  const [startHour, startMin] = session.startTime.split(':').map(Number);
-  const [endHour, endMin] = session.endTime.split(':').map(Number);
-
   const sessionStart = new Date(`${today}T${session.startTime}:00`);
   const sessionEnd = new Date(`${today}T${session.endTime}:00`);
+
+  // If we're before the session starts or after it ends, return -1
+  // This means time-based adjustments won't apply outside session hours
+  if (now < sessionStart || now > sessionEnd) {
+    return -1;
+  }
 
   const sessionDuration = sessionEnd.getTime() - sessionStart.getTime();
   const elapsed = now.getTime() - sessionStart.getTime();
@@ -118,6 +122,12 @@ function getVoucherBoostMultiplier(
 
   // No vouchers needed, no boost
   if (vouchersNeeded <= 0) {
+    return { multiplier: 1, forceVoucher: false };
+  }
+
+  // If we're outside session time window (-1), don't apply time-based adjustments
+  // This happens when admin manually starts a session outside its scheduled hours
+  if (timeProgress < 0) {
     return { multiplier: 1, forceVoucher: false };
   }
 
