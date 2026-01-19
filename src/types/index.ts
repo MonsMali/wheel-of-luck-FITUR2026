@@ -18,11 +18,14 @@ export interface PrizeInventory {
 export interface Session {
   id: string;
   day: 'saturday' | 'sunday';
-  startTime: string; // HH:MM format
-  endTime: string;
+  startTime: string; // HH:MM format (scheduled)
+  endTime: string;   // HH:MM format (scheduled)
   isActive: boolean;
   targetVouchers: number;
   vouchersAwarded: number;
+  // Actual timing (set when session is started/ended)
+  actualStartTime?: string; // ISO timestamp when admin started the session
+  actualEndTime?: string;   // ISO timestamp when session ended (auto or manual)
 }
 
 export interface SpinRecord {

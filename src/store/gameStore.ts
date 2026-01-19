@@ -108,9 +108,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setCurrentSession: (session) => set({ currentSession: session }),
 
   startSession: (sessionId) => {
+    const session = get().sessions.find((s) => s.id === sessionId);
+
+    // Prevent restarting a used session
+    if (session?.actualEndTime) {
+      console.warn(`Session ${sessionId} already used, cannot restart`);
+      return;
+    }
+
     set((state) => ({
       sessions: state.sessions.map((s) =>
-        s.id === sessionId ? { ...s, isActive: true } : s
+        s.id === sessionId
+          ? { ...s, isActive: true, actualStartTime: new Date().toISOString() }
+          : s
       ),
       currentSession: state.sessions.find((s) => s.id === sessionId) || null,
     }));
@@ -120,7 +130,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   endSession: (sessionId) => {
     set((state) => ({
       sessions: state.sessions.map((s) =>
-        s.id === sessionId ? { ...s, isActive: false } : s
+        s.id === sessionId
+          ? { ...s, isActive: false, actualEndTime: new Date().toISOString() }
+          : s
       ),
       currentSession: null,
     }));

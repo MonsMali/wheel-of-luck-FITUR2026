@@ -39,6 +39,7 @@ export default function GamePage() {
     loadState,
     loadFromServer,
     spinHistory,
+    endSession,
   } = useGameStore();
 
   const [canSpin, setCanSpin] = useState(false);
@@ -77,6 +78,9 @@ export default function GamePage() {
     };
   }, [loadState, loadFromServer]);
 
+  // Session duration in milliseconds (1 hour)
+  const SESSION_DURATION_MS = 60 * 60 * 1000;
+
   // Check session status periodically
   useEffect(() => {
     const checkSession = () => {
@@ -89,6 +93,20 @@ export default function GamePage() {
       const totalPrizes = inventory.voucher + inventory.tasting + inventory.surprise;
 
       if (activeSession) {
+        // AUTO-END CHECK: If 1 hour has passed since actualStartTime, end the session
+        if (activeSession.actualStartTime) {
+          const startTime = new Date(activeSession.actualStartTime).getTime();
+          const elapsed = now.getTime() - startTime;
+
+          if (elapsed >= SESSION_DURATION_MS) {
+            console.log(`Auto-ending session ${activeSession.id} after 1 hour`);
+            endSession(activeSession.id);
+            setCanSpin(false);
+            setSessionEnded(true);
+            return;
+          }
+        }
+
         setCurrentSession(activeSession);
 
         // Check if we still have prizes
@@ -117,7 +135,7 @@ export default function GamePage() {
     const interval = setInterval(checkSession, 1000);
 
     return () => clearInterval(interval);
-  }, [sessions, eventDay, inventory]);
+  }, [sessions, eventDay, inventory, endSession]);
 
   const handleSpin = useCallback(() => {
     // Rate limiting check

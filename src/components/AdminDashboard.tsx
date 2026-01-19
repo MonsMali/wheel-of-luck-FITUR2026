@@ -369,21 +369,52 @@ function SessionCard({
   onStart: () => void;
   onEnd: () => void;
 }) {
+  const [timeRemaining, setTimeRemaining] = React.useState<string>('');
+
+  // Calculate time remaining for active sessions
+  React.useEffect(() => {
+    if (!session.isActive || !session.actualStartTime) return;
+
+    const updateTime = () => {
+      const startTime = new Date(session.actualStartTime!).getTime();
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 60 * 60 * 1000 - elapsed);
+
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      setTimeRemaining(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [session.isActive, session.actualStartTime]);
+
+  const isUsed = !!session.actualEndTime;
+
   return (
     <div
       className={`
         p-4 rounded-lg border-2 transition-all
         ${session.isActive
           ? 'border-green-500 bg-green-500/10'
-          : 'border-white/10 bg-white/5'}
+          : isUsed
+            ? 'border-gray-500 bg-gray-500/10 opacity-60'
+            : 'border-white/10 bg-white/5'}
       `}
     >
       <div className="text-white font-semibold mb-2">
         {formatSessionTime(session)}
+        {isUsed && <span className="ml-2 text-xs text-gray-400">(Usada)</span>}
       </div>
       <div className="text-sm text-white/60 mb-3">
         <div>Vales objetivo: {session.targetVouchers}</div>
         <div>Vales entregados: {session.vouchersAwarded}</div>
+        {session.isActive && timeRemaining && (
+          <div className="text-green-400 font-mono mt-1">
+            Tiempo restante: {timeRemaining}
+          </div>
+        )}
       </div>
       {session.isActive ? (
         <button
@@ -392,6 +423,10 @@ function SessionCard({
         >
           Finalizar sesión
         </button>
+      ) : isUsed ? (
+        <div className="w-full py-2 bg-gray-500/20 text-gray-400 rounded text-center text-sm">
+          Sesión completada
+        </div>
       ) : (
         <button
           onClick={onStart}
