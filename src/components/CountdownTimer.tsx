@@ -7,6 +7,7 @@ import {
   getTimeUntilSession,
   formatTime,
   getSessionScheduleText,
+  getSpainTime,
   TimeUntilNext,
 } from '@/utils/sessionManager';
 
@@ -22,7 +23,7 @@ export default function CountdownTimer({ sessions, eventDay }: CountdownTimerPro
 
   useEffect(() => {
     const updateCountdown = () => {
-      const now = new Date();
+      const now = getSpainTime(); // Use Spain time for countdown
       const next = findNextSession(sessions, eventDay, now);
       setNextSession(next);
 

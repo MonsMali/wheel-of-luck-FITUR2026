@@ -18,6 +18,7 @@ export default function AdminDashboard() {
     setEventDay,
     startSession,
     endSession,
+    restartSession,
     resetInventory,
     adjustInventory,
     spinHistory,
@@ -271,6 +272,7 @@ export default function AdminDashboard() {
                   session={session}
                   onStart={() => startSession(session.id)}
                   onEnd={() => endSession(session.id)}
+                  onRestart={() => restartSession(session.id)}
                 />
               ))}
             </div>
@@ -364,10 +366,12 @@ function SessionCard({
   session,
   onStart,
   onEnd,
+  onRestart,
 }: {
   session: Session;
   onStart: () => void;
   onEnd: () => void;
+  onRestart: () => void;
 }) {
   const [timeRemaining, setTimeRemaining] = React.useState<string>('');
 
@@ -424,9 +428,12 @@ function SessionCard({
           Finalizar sesión
         </button>
       ) : isUsed ? (
-        <div className="w-full py-2 bg-gray-500/20 text-gray-400 rounded text-center text-sm">
-          Sesión completada
-        </div>
+        <button
+          onClick={onRestart}
+          className="w-full py-2 bg-orange-500/20 text-orange-300 rounded hover:bg-orange-500/30 transition-colors"
+        >
+          ⚠️ Reiniciar sesión
+        </button>
       ) : (
         <button
           onClick={onStart}

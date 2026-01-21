@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/gameStore';
 import { selectPrize } from '@/utils/prizeLogic';
-import { findCurrentSession } from '@/utils/sessionManager';
+import { findCurrentSession, getSpainTime } from '@/utils/sessionManager';
 import PrizeWheel from './PrizeWheel';
 import SpinButton from './SpinButton';
 import CountdownTimer from './CountdownTimer';
@@ -120,7 +120,8 @@ export default function GamePage() {
         }
       } else {
         // No active session - show countdown
-        const session = findCurrentSession(sessions, eventDay, now);
+        const spainNow = getSpainTime(); // Use Spain time for session lookup
+        const session = findCurrentSession(sessions, eventDay, spainNow);
         if (session) {
           setCurrentSession(session);
         } else {

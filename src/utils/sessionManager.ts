@@ -1,5 +1,17 @@
 import { Session } from '@/types';
 
+// Spain timezone offset from UTC (CET = UTC+1, CEST = UTC+2)
+// FITUR 2026 is in January, so CET (UTC+1) applies
+const SPAIN_TIMEZONE_OFFSET_HOURS = 1;
+
+// Get current time in Spain
+export function getSpainTime(date?: Date): Date {
+  const now = date || new Date();
+  // Get UTC time, then add Spain offset
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utcTime + (SPAIN_TIMEZONE_OFFSET_HOURS * 3600000));
+}
+
 export interface TimeUntilNext {
   hours: number;
   minutes: number;

@@ -186,6 +186,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().saveState();
   },
 
+  // Emergency restart: allows restarting a session that was accidentally ended
+  restartSession: (sessionId) => {
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === sessionId
+          ? { ...s, isActive: true, actualEndTime: undefined, actualStartTime: new Date().toISOString() }
+          : s
+      ),
+    }));
+    get().saveState();
+  },
+
   adjustInventory: (type, amount) => {
     const { inventory } = get();
     const newAmount = Math.max(0, inventory[type] + amount);
