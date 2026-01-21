@@ -1,6 +1,6 @@
 # Ruleta de la Suerte Algarve
 
-An interactive prize wheel web application optimized for the Algarve Tourism Stand at FITUR 2025.
+An interactive prize wheel web application optimized for the Algarve Tourism Stand at FITUR 2026.
 
 ## Features
 
@@ -225,7 +225,7 @@ ruleta/
 
 ## License
 
-Developed for Algarve Tourism - FITUR 2025.
+Developed for Algarve Tourism - FITUR 2026.
 
 ## Support
 

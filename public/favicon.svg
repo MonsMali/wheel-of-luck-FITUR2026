@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#1e3a5f"/>
+
+  <!-- Wheel segments - 8 colorful slices -->
+  <path d="M32,32 L32,2 A30,30 0 0,1 53.2,10.8 Z" fill="#FFD700"/>
+  <path d="M32,32 L53.2,10.8 A30,30 0 0,1 62,32 Z" fill="#0077B6"/>
+  <path d="M32,32 L62,32 A30,30 0 0,1 53.2,53.2 Z" fill="#E85D04"/>
+  <path d="M32,32 L53.2,53.2 A30,30 0 0,1 32,62 Z" fill="#0077B6"/>
+  <path d="M32,32 L32,62 A30,30 0 0,1 10.8,53.2 Z" fill="#FFD700"/>
+  <path d="M32,32 L10.8,53.2 A30,30 0 0,1 2,32 Z" fill="#0077B6"/>
+  <path d="M32,32 L2,32 A30,30 0 0,1 10.8,10.8 Z" fill="#E85D04"/>
+  <path d="M32,32 L10.8,10.8 A30,30 0 0,1 32,2 Z" fill="#0077B6"/>
+
+  <!-- Center hub -->
+  <circle cx="32" cy="32" r="8" fill="#fff"/>
+  <circle cx="32" cy="32" r="5" fill="#1e3a5f"/>
+
+  <!-- Outer ring -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#fff" stroke-width="2"/>
+
+  <!-- Pointer at top -->
+  <polygon points="32,0 28,8 36,8" fill="#fff"/>
+</svg>

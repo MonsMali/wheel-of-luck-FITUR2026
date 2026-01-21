@@ -216,7 +216,7 @@ export default function GamePage() {
         <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
           Ruleta de la Suerte Algarve
         </h1>
-        <p className="text-white/80 mt-2">FITUR 2025</p>
+        <p className="text-white/80 mt-2">FITUR 2026</p>
       </header>
 
       {/* Main content */}

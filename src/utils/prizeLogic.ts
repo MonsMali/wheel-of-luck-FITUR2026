@@ -93,7 +93,7 @@ const TIME_URGENT_THRESHOLD = 0.8;   // Urgent boost at 80% of session time
 const TIME_FORCE_THRESHOLD = 0.9;    // Force voucher at 90% of session time
 
 // Spain timezone offset from UTC (CET = UTC+1, CEST = UTC+2)
-// FITUR 2025 is in January, so CET (UTC+1) applies
+// FITUR 2026 is in January, so CET (UTC+1) applies
 const SPAIN_TIMEZONE_OFFSET_HOURS = 1;
 
 // Buffer for session start/end times (accounts for early starts or delays)
