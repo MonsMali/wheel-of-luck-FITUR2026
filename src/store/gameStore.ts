@@ -5,22 +5,25 @@ import { GameStore, PrizeInventory, PrizeType, Session, SpinRecord } from '@/typ
 
 const ADMIN_PIN = 'FITUR2026'; // Staff access PIN
 
-// Updated after session 1: 3 experiencias given, now 6 left
-// 7 saboreo given, now 76 left
-// 1172 regalos left
-// Total: 1254 prizes for 7 remaining sessions
+// Updated after session 2 (sat-13): 369 total spins so far
+// 5 experiencias left for 6 remaining sessions (max 1 per session)
+// 68 saboreos left
+// 949 regalos left
+// Total: 1022 prizes for 6 remaining sessions (~170 spins/session expected)
 const INITIAL_INVENTORY: PrizeInventory = {
-  voucher: 6,
-  tasting: 76,
-  surprise: 1172,
+  voucher: 5,
+  tasting: 68,
+  surprise: 949,
 };
 
-// Session 1 (sat-11) is done - 3 experiencias, 7 saboreo, 126 regalos given
-// 7 sessions remaining
+// Sessions 1-2 done (sat-11, sat-13): 369 total spins
+// sat-11: 3 experiencias, 7 saboreo, 126 regalos (136 spins)
+// sat-13: 1 experiencia, 8 saboreo, 223 regalos (232 spins)
+// 6 sessions remaining
 const SESSIONS: Session[] = [
-  // Saturday sessions - first one already completed
-  { id: 'sat-11', day: 'saturday', startTime: '11:00', endTime: '12:00', isActive: false, targetVouchers: 0, vouchersAwarded: 3, actualEndTime: '2026-01-25T00:00:00.000Z' },
-  { id: 'sat-13', day: 'saturday', startTime: '13:00', endTime: '14:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  // Saturday sessions - first two already completed
+  { id: 'sat-11', day: 'saturday', startTime: '11:00', endTime: '12:00', isActive: false, targetVouchers: 0, vouchersAwarded: 3, actualEndTime: '2026-01-24T11:00:00.000Z' },
+  { id: 'sat-13', day: 'saturday', startTime: '13:00', endTime: '14:00', isActive: false, targetVouchers: 0, vouchersAwarded: 1, actualEndTime: '2026-01-24T13:00:00.000Z' },
   { id: 'sat-16', day: 'saturday', startTime: '16:00', endTime: '17:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
   { id: 'sat-18', day: 'saturday', startTime: '18:00', endTime: '19:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
   // Sunday sessions
