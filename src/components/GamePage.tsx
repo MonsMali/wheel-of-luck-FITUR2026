@@ -72,9 +72,15 @@ export default function GamePage() {
       loadState();
     }, 2000);
 
+    // Poll server for changes every 3 seconds (for cross-device sync - critical for session state)
+    const serverPollInterval = setInterval(() => {
+      loadFromServer();
+    }, 3000);
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(pollInterval);
+      clearInterval(serverPollInterval);
     };
   }, [loadState, loadFromServer]);
 
