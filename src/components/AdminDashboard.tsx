@@ -30,13 +30,12 @@ export default function AdminDashboard() {
   const [pinError, setPinError] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Auto-refresh: poll localStorage every second to see spin updates in real-time
+  // Auto-refresh: poll both localStorage and server for real-time updates
   useEffect(() => {
     // First load from localStorage (fast)
     loadState();
 
-    // Then load from server ONCE (authoritative, handles device changes/refreshes)
-    // This runs only on initial mount - not continuously to avoid race conditions
+    // Then load from server (authoritative)
     loadFromServer();
 
     // Listen for localStorage changes from other tabs (main game page)
@@ -53,12 +52,15 @@ export default function AdminDashboard() {
       loadState();
     }, 1000);
 
-    // Note: We don't continuously poll the server to avoid race conditions.
-    // For cross-device sync, refresh the page or use the manual sync button.
+    // Poll server every 3 seconds for cross-device sync (game on kiosk, admin on laptop)
+    const serverPollInterval = setInterval(() => {
+      loadFromServer();
+    }, 3000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(pollInterval);
+      clearInterval(serverPollInterval);
     };
   }, [loadState, loadFromServer]);
 
