@@ -155,13 +155,17 @@ export default function GamePage() {
     // Check if we can spin
     if (isSpinning || !canSpin) return;
 
+    // Get the freshest session data from the store (not from local state which might be stale)
+    const freshSessions = useGameStore.getState().sessions;
+    const freshCurrentSession = freshSessions.find(s => s.isActive === true) || null;
+
     // Count spins in current session for voucher guarantee mechanism
-    const sessionSpinCount = currentSession
-      ? spinHistory.filter(s => s.sessionId === currentSession.id).length
+    const sessionSpinCount = freshCurrentSession
+      ? spinHistory.filter(s => s.sessionId === freshCurrentSession.id).length
       : 0;
 
     // Select the prize before spinning (pass session spin count for guarantee logic)
-    const prize = selectPrize(inventory, currentSession, sessionSpinCount);
+    const prize = selectPrize(inventory, freshCurrentSession, sessionSpinCount);
     if (!prize) {
       setSessionEnded(true);
       return;
@@ -174,7 +178,7 @@ export default function GamePage() {
     // Play sounds
     playSound('spin');
     playSpinningSound(5000);
-  }, [isSpinning, canSpin, inventory, currentSession, spinHistory, setIsSpinning, playSound, playSpinningSound]);
+  }, [isSpinning, canSpin, inventory, spinHistory, setIsSpinning, playSound, playSpinningSound]);
 
   const handleSpinComplete = useCallback((prize: Prize) => {
     // Update inventory

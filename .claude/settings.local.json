@@ -15,7 +15,8 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nSwitch from @vercel/kv to @upstash/redis\n\nUpstash Redis is now the recommended SDK after Vercel KV\nmoved to the marketplace.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git push)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd time-based dynamic probability adjustment for vouchers\n\nWhen a session is running low on time but hasn''t awarded enough\nvouchers, the system now automatically increases voucher probability:\n\n- 60% of session time: 2x probability boost per voucher needed\n- 80% of session time: 5x probability boost \\(urgent\\)\n- 90% of session time: Force voucher on next spin\n\nThis ensures voucher targets are met even with low attendance.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

@@ -67,8 +67,17 @@ export function selectPrize(
     return null;
   }
 
+  // Check if vouchers are blocked for this session
+  // Max 1 voucher per session - if session already has one, block vouchers
+  const voucherBlockedForSession = currentSession && currentSession.vouchersAwarded >= 1;
+
   // Simple weighted random selection based on remaining inventory
   const weights = calculateWeights(inventory);
+
+  // If vouchers are blocked for this session, set weight to 0
+  if (voucherBlockedForSession) {
+    weights.set('voucher', 0);
+  }
 
   // Calculate total weight
   let totalWeight = 0;
@@ -95,9 +104,12 @@ export function selectPrize(
     }
   }
 
-  // Fallback to first available prize
+  // Fallback to first available prize (excluding blocked vouchers)
   for (const prize of PRIZES) {
     if (inventory[prize.type] > 0) {
+      if (prize.type === 'voucher' && voucherBlockedForSession) {
+        continue;
+      }
       return prize;
     }
   }
