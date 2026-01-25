@@ -84,9 +84,6 @@ export default function GamePage() {
     };
   }, [loadState, loadFromServer]);
 
-  // Session duration in milliseconds (1 hour)
-  const SESSION_DURATION_MS = 60 * 60 * 1000;
-
   // Check session status periodically
   useEffect(() => {
     const checkSession = () => {
@@ -99,13 +96,16 @@ export default function GamePage() {
       const totalPrizes = inventory.voucher + inventory.tasting + inventory.surprise;
 
       if (activeSession) {
-        // AUTO-END CHECK: If 1 hour has passed since actualStartTime, end the session
+        // AUTO-END CHECK: If session duration has passed since actualStartTime, end the session
+        // Duration is session-specific (60 min for Saturday, 45 min for Sunday)
+        const sessionDurationMs = (activeSession.durationMinutes || 60) * 60 * 1000;
+
         if (activeSession.actualStartTime) {
           const startTime = new Date(activeSession.actualStartTime).getTime();
           const elapsed = now.getTime() - startTime;
 
-          if (elapsed >= SESSION_DURATION_MS) {
-            console.log(`Auto-ending session ${activeSession.id} after 1 hour`);
+          if (elapsed >= sessionDurationMs) {
+            console.log(`Auto-ending session ${activeSession.id} after ${activeSession.durationMinutes || 60} minutes`);
             endSession(activeSession.id);
             setCanSpin(false);
             setSessionEnded(true);
@@ -160,12 +160,26 @@ export default function GamePage() {
     const freshCurrentSession = freshSessions.find(s => s.isActive === true) || null;
 
     // Count spins in current session for voucher guarantee mechanism
-    const sessionSpinCount = freshCurrentSession
-      ? spinHistory.filter(s => s.sessionId === freshCurrentSession.id).length
-      : 0;
+    const sessionSpins = freshCurrentSession
+      ? spinHistory.filter(s => s.sessionId === freshCurrentSession.id)
+      : [];
+    const sessionSpinCount = sessionSpins.length;
+
+    // DEFENSE IN DEPTH: Also check spin history for vouchers as backup
+    // This catches cases where session.vouchersAwarded might be stale due to sync issues
+    const vouchersInSpinHistory = sessionSpins.filter(s => s.prizeType === 'voucher').length;
+
+    // Create a session copy with the more accurate voucher count from spin history
+    // Use the higher of the two values to be safe (prevents awarding extra vouchers)
+    const sessionWithAccurateVoucherCount = freshCurrentSession
+      ? {
+          ...freshCurrentSession,
+          vouchersAwarded: Math.max(freshCurrentSession.vouchersAwarded, vouchersInSpinHistory)
+        }
+      : null;
 
     // Select the prize before spinning (pass session spin count for guarantee logic)
-    const prize = selectPrize(inventory, freshCurrentSession, sessionSpinCount);
+    const prize = selectPrize(inventory, sessionWithAccurateVoucherCount, sessionSpinCount);
     if (!prize) {
       setSessionEnded(true);
       return;
@@ -181,23 +195,30 @@ export default function GamePage() {
   }, [isSpinning, canSpin, inventory, spinHistory, setIsSpinning, playSound, playSpinningSound]);
 
   const handleSpinComplete = useCallback((prize: Prize) => {
+    // Get fresh session from store (not stale React state)
+    const freshSessions = useGameStore.getState().sessions;
+    const freshSession = freshSessions.find(s => s.isActive === true) || null;
+    const sessionId = freshSession?.id || currentSession?.id || 'unknown';
+
+    // IMPORTANT: Increment voucher counter FIRST, before saving spin record
+    // This prevents a race condition where another device reads stale vouchersAwarded: 0
+    // after the spin record is saved but before the voucher counter is incremented
+    if (prize.type === 'voucher' && sessionId !== 'unknown') {
+      incrementSessionVoucher(sessionId);
+    }
+
     // Update inventory
     decrementPrize(prize.type);
 
-    // Record the spin
+    // Record the spin (this save will now include the updated voucher count)
     const record: SpinRecord = {
       id: uuidv4(),
       timestamp: new Date().toISOString(),
-      sessionId: currentSession?.id || 'unknown',
+      sessionId: sessionId,
       prizeType: prize.type,
       prizeDisplayName: prize.displayName,
     };
     addSpinRecord(record);
-
-    // If voucher, update session counter
-    if (prize.type === 'voucher' && currentSession) {
-      incrementSessionVoucher(currentSession.id);
-    }
 
     // Show win modal
     setLastWin(prize);

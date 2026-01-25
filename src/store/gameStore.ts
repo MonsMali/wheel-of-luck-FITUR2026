@@ -20,17 +20,18 @@ const INITIAL_INVENTORY: PrizeInventory = {
 // sat-11: 3 experiencias, 7 saboreo, 126 regalos (136 spins)
 // sat-13: 1 experiencia, 8 saboreo, 223 regalos (232 spins)
 // 6 sessions remaining
+// Sunday sessions are 45 minutes, Saturday sessions are 60 minutes
 const SESSIONS: Session[] = [
-  // Saturday sessions - first two already completed
-  { id: 'sat-11', day: 'saturday', startTime: '11:00', endTime: '12:00', isActive: false, targetVouchers: 0, vouchersAwarded: 3, actualEndTime: '2026-01-24T11:00:00.000Z' },
-  { id: 'sat-13', day: 'saturday', startTime: '13:00', endTime: '14:00', isActive: false, targetVouchers: 0, vouchersAwarded: 1, actualEndTime: '2026-01-24T13:00:00.000Z' },
-  { id: 'sat-16', day: 'saturday', startTime: '16:00', endTime: '17:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  { id: 'sat-18', day: 'saturday', startTime: '18:00', endTime: '19:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  // Sunday sessions
-  { id: 'sun-11', day: 'sunday', startTime: '11:00', endTime: '12:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  { id: 'sun-13', day: 'sunday', startTime: '13:00', endTime: '14:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  { id: 'sun-16', day: 'sunday', startTime: '16:00', endTime: '17:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  { id: 'sun-17', day: 'sunday', startTime: '17:00', endTime: '18:00', isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  // Saturday sessions (60 min each) - first two already completed
+  { id: 'sat-11', day: 'saturday', startTime: '11:00', endTime: '12:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 3, actualEndTime: '2026-01-24T11:00:00.000Z' },
+  { id: 'sat-13', day: 'saturday', startTime: '13:00', endTime: '14:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 1, actualEndTime: '2026-01-24T13:00:00.000Z' },
+  { id: 'sat-16', day: 'saturday', startTime: '16:00', endTime: '17:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  { id: 'sat-18', day: 'saturday', startTime: '18:00', endTime: '19:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  // Sunday sessions (45 min each)
+  { id: 'sun-11', day: 'sunday', startTime: '11:00', endTime: '11:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  { id: 'sun-13', day: 'sunday', startTime: '13:00', endTime: '13:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  { id: 'sun-16', day: 'sunday', startTime: '16:00', endTime: '16:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  { id: 'sun-17', day: 'sunday', startTime: '17:00', endTime: '17:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
 ];
 
 const STORAGE_KEY = 'ruleta-algarve-state';

@@ -80,11 +80,41 @@ export default function AdminDashboard() {
   };
 
   const exportData = () => {
+    // Calculate per-session statistics
+    const sessionStats = sessions.map(session => {
+      const sessionSpins = spinHistory.filter(s => s.sessionId === session.id);
+      const voucherCount = sessionSpins.filter(s => s.prizeType === 'voucher').length;
+      const tastingCount = sessionSpins.filter(s => s.prizeType === 'tasting').length;
+      const surpriseCount = sessionSpins.filter(s => s.prizeType === 'surprise').length;
+      return {
+        sessionId: session.id,
+        day: session.day,
+        scheduledTime: `${session.startTime} - ${session.endTime}`,
+        durationMinutes: session.durationMinutes,
+        totalSpins: sessionSpins.length,
+        prizes: {
+          experiencia: voucherCount,
+          saboreo: tastingCount,
+          regalos: surpriseCount,
+        },
+        vouchersAwarded: session.vouchersAwarded,
+      };
+    });
+
+    // Format timestamps in Spain time for the export
+    const spinHistoryWithSpainTime = spinHistory.map(record => ({
+      ...record,
+      timestampUTC: record.timestamp,
+      timestampSpain: new Date(record.timestamp).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
+    }));
+
     const data = {
       exportDate: new Date().toISOString(),
+      exportDateSpain: new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
       inventory,
       sessions,
-      spinHistory,
+      sessionStats,
+      spinHistory: spinHistoryWithSpainTime,
       statistics: calculateStatistics(inventory, initialInventory),
     };
 
@@ -268,15 +298,19 @@ export default function AdminDashboard() {
             <p className="text-white/60">Selecciona un día del evento para ver las sesiones.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {daySessions.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  onStart={() => startSession(session.id)}
-                  onEnd={() => endSession(session.id)}
-                  onRestart={() => restartSession(session.id)}
-                />
-              ))}
+              {daySessions.map((session) => {
+                const sessionSpinCount = spinHistory.filter(s => s.sessionId === session.id).length;
+                return (
+                  <SessionCard
+                    key={session.id}
+                    session={session}
+                    spinCount={sessionSpinCount}
+                    onStart={() => startSession(session.id)}
+                    onEnd={() => endSession(session.id)}
+                    onRestart={() => restartSession(session.id)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -293,13 +327,13 @@ export default function AdminDashboard() {
             {spinHistory.length === 0 ? (
               <p className="text-white/60 text-center py-4">No hay giros registrados</p>
             ) : (
-              [...spinHistory].reverse().slice(0, 50).map((record, index) => (
+              [...spinHistory].reverse().slice(0, 50).map((record) => (
                 <div
                   key={record.id}
                   className="flex justify-between items-center py-2 px-3 bg-white/5 rounded-lg text-sm"
                 >
                   <span className="text-white/60">
-                    {new Date(record.timestamp).toLocaleTimeString('es-ES')}
+                    {new Date(record.timestamp).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid' })}
                   </span>
                   <span className="text-white font-medium">{record.prizeDisplayName}</span>
                   <span className="text-white/40">{record.sessionId}</span>
@@ -366,11 +400,13 @@ export default function AdminDashboard() {
 
 function SessionCard({
   session,
+  spinCount,
   onStart,
   onEnd,
   onRestart,
 }: {
   session: Session;
+  spinCount: number;
   onStart: () => void;
   onEnd: () => void;
   onRestart: () => void;
@@ -378,13 +414,16 @@ function SessionCard({
   const [timeRemaining, setTimeRemaining] = React.useState<string>('');
 
   // Calculate time remaining for active sessions
+  // Uses session-specific duration (60 min for Saturday, 45 min for Sunday)
   React.useEffect(() => {
     if (!session.isActive || !session.actualStartTime) return;
+
+    const sessionDurationMs = (session.durationMinutes || 60) * 60 * 1000;
 
     const updateTime = () => {
       const startTime = new Date(session.actualStartTime!).getTime();
       const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 60 * 60 * 1000 - elapsed);
+      const remaining = Math.max(0, sessionDurationMs - elapsed);
 
       const minutes = Math.floor(remaining / 60000);
       const seconds = Math.floor((remaining % 60000) / 1000);
@@ -394,7 +433,7 @@ function SessionCard({
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
-  }, [session.isActive, session.actualStartTime]);
+  }, [session.isActive, session.actualStartTime, session.durationMinutes]);
 
   const isUsed = !!session.actualEndTime;
 
@@ -414,8 +453,8 @@ function SessionCard({
         {isUsed && <span className="ml-2 text-xs text-gray-400">(Usada)</span>}
       </div>
       <div className="text-sm text-white/60 mb-3">
-        <div>Vales objetivo: {session.targetVouchers}</div>
-        <div>Vales entregados: {session.vouchersAwarded}</div>
+        <div>Giros: <span className="text-white font-medium">{spinCount}</span></div>
+        <div>Experiencias: <span className={session.vouchersAwarded > 0 ? 'text-yellow-400 font-medium' : ''}>{session.vouchersAwarded}</span></div>
         {session.isActive && timeRemaining && (
           <div className="text-green-400 font-mono mt-1">
             Tiempo restante: {timeRemaining}

@@ -20,6 +20,7 @@ export interface Session {
   day: 'saturday' | 'sunday';
   startTime: string; // HH:MM format (scheduled)
   endTime: string;   // HH:MM format (scheduled)
+  durationMinutes: number; // Session duration in minutes (60 for Saturday, 45 for Sunday)
   isActive: boolean;
   targetVouchers: number;
   vouchersAwarded: number;
