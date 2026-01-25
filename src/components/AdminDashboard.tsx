@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@/store/gameStore';
 import { PrizeType, Session } from '@/types';
-import { calculateStatistics, PRIZES } from '@/utils/prizeLogic';
+import { calculateStatistics, PRIZES, selectPrize } from '@/utils/prizeLogic';
 import { formatSessionTime } from '@/utils/sessionManager';
 
 export default function AdminDashboard() {
@@ -24,11 +24,17 @@ export default function AdminDashboard() {
     spinHistory,
     loadState,
     loadFromServer,
+    syncSessionConfig,
   } = useGameStore();
 
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showSimulation, setShowSimulation] = useState(false);
+  const [simulationResults, setSimulationResults] = useState<{
+    sessions: { id: string; spins: number; vouchers: number; tastings: number; surprises: number }[];
+    tests: { name: string; passed: boolean; details: string }[];
+  } | null>(null);
 
   // Auto-refresh: poll both localStorage and server for real-time updates
   useEffect(() => {
@@ -125,6 +131,111 @@ export default function AdminDashboard() {
     a.download = `ruleta-algarve-export-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Simulation function - tests the wheel logic WITHOUT saving any data
+  const runSimulation = () => {
+    const tests: { name: string; passed: boolean; details: string }[] = [];
+
+    // Test 1: Vouchers blocked in first 15 spins
+    {
+      const testSession = { ...sessions[4], vouchersAwarded: 0 }; // Use sun-11 as template
+      let voucherCount = 0;
+      for (let spinCount = 0; spinCount < 15; spinCount++) {
+        for (let i = 0; i < 100; i++) {
+          const prize = selectPrize(inventory, testSession, spinCount);
+          if (prize?.type === 'voucher') voucherCount++;
+        }
+      }
+      tests.push({
+        name: 'Vouchers blocked in first 15 spins',
+        passed: voucherCount === 0,
+        details: voucherCount === 0
+          ? 'No vouchers in 1,500 test spins (spins 0-14)'
+          : `PROBLEM: ${voucherCount} vouchers awarded in first 15 spins`,
+      });
+    }
+
+    // Test 2: Vouchers possible after spin 15
+    {
+      const testSession = { ...sessions[4], vouchersAwarded: 0 };
+      let voucherCount = 0;
+      for (let i = 0; i < 5000; i++) {
+        const prize = selectPrize(inventory, testSession, 20);
+        if (prize?.type === 'voucher') voucherCount++;
+      }
+      tests.push({
+        name: 'Vouchers possible after spin 15',
+        passed: voucherCount > 0,
+        details: voucherCount > 0
+          ? `${voucherCount} vouchers in 5,000 test spins (${(voucherCount/50).toFixed(1)}%)`
+          : 'PROBLEM: No vouchers awarded after spin 15',
+      });
+    }
+
+    // Test 3: Vouchers blocked when session already has one
+    {
+      const testSession = { ...sessions[4], vouchersAwarded: 1 };
+      let voucherCount = 0;
+      for (let i = 0; i < 5000; i++) {
+        const prize = selectPrize(inventory, testSession, 50);
+        if (prize?.type === 'voucher') voucherCount++;
+      }
+      tests.push({
+        name: 'Max 1 voucher per session enforced',
+        passed: voucherCount === 0,
+        details: voucherCount === 0
+          ? 'No extra vouchers in 5,000 test spins when session has 1'
+          : `PROBLEM: ${voucherCount} extra vouchers awarded!`,
+      });
+    }
+
+    // Simulate 4 Sunday sessions (100 spins each)
+    const sundaySessions = sessions.filter(s => s.day === 'sunday');
+    const sessionResults = sundaySessions.map(session => {
+      const simSession = { ...session, vouchersAwarded: 0 };
+      const simInventory = { ...inventory };
+      const counts = { vouchers: 0, tastings: 0, surprises: 0 };
+
+      for (let spinCount = 0; spinCount < 100; spinCount++) {
+        // Apply defense-in-depth: use max of session counter and already-won vouchers
+        const effectiveVouchers = Math.max(simSession.vouchersAwarded, counts.vouchers);
+        const sessionForSpin = { ...simSession, vouchersAwarded: effectiveVouchers };
+
+        const prize = selectPrize(simInventory, sessionForSpin, spinCount);
+        if (prize) {
+          if (prize.type === 'voucher') {
+            counts.vouchers++;
+            simSession.vouchersAwarded++;
+          } else if (prize.type === 'tasting') {
+            counts.tastings++;
+          } else {
+            counts.surprises++;
+          }
+        }
+      }
+
+      return {
+        id: session.id,
+        spins: 100,
+        vouchers: counts.vouchers,
+        tastings: counts.tastings,
+        surprises: counts.surprises,
+      };
+    });
+
+    // Check if any session got more than 1 voucher
+    const maxVouchersInSession = Math.max(...sessionResults.map(s => s.vouchers));
+    tests.push({
+      name: 'Session simulation (100 spins x 4 sessions)',
+      passed: maxVouchersInSession <= 1,
+      details: maxVouchersInSession <= 1
+        ? `Max ${maxVouchersInSession} voucher per session - correct!`
+        : `PROBLEM: A session got ${maxVouchersInSession} vouchers!`,
+    });
+
+    setSimulationResults({ sessions: sessionResults, tests });
+    setShowSimulation(true);
   };
 
   if (!adminAuthenticated) {
@@ -346,6 +457,18 @@ export default function AdminDashboard() {
         {/* Actions */}
         <div className="flex gap-4 flex-wrap">
           <button
+            onClick={syncSessionConfig}
+            className="px-6 py-3 bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors"
+          >
+            Actualizar horarios sesiones
+          </button>
+          <button
+            onClick={runSimulation}
+            className="px-6 py-3 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors"
+          >
+            Simular ruleta (sin guardar)
+          </button>
+          <button
             onClick={() => loadFromServer()}
             className="px-6 py-3 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors"
           >
@@ -390,6 +513,63 @@ export default function AdminDashboard() {
                   Reiniciar
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Simulation Results Modal */}
+        {showSimulation && simulationResults && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-bold text-white mb-4">
+                Resultados de Simulación
+              </h3>
+              <p className="text-white/60 text-sm mb-4">
+                Esta simulación NO afecta los datos reales. Solo verifica que la lógica funciona correctamente.
+              </p>
+
+              {/* Test Results */}
+              <div className="mb-6">
+                <h4 className="text-white font-semibold mb-3">Tests de Lógica:</h4>
+                <div className="space-y-2">
+                  {simulationResults.tests.map((test, i) => (
+                    <div
+                      key={i}
+                      className={`p-3 rounded-lg ${test.passed ? 'bg-green-500/20' : 'bg-red-500/20'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{test.passed ? '✅' : '❌'}</span>
+                        <span className={test.passed ? 'text-green-300' : 'text-red-300'}>
+                          {test.name}
+                        </span>
+                      </div>
+                      <p className="text-white/60 text-sm mt-1 ml-8">{test.details}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Session Simulation Results */}
+              <div className="mb-6">
+                <h4 className="text-white font-semibold mb-3">Simulación de Sesiones (100 giros c/u):</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {simulationResults.sessions.map((session) => (
+                    <div key={session.id} className="bg-white/5 rounded-lg p-3 text-sm">
+                      <div className="text-white font-medium mb-2">{session.id}</div>
+                      <div className="text-yellow-400">Experiencias: {session.vouchers}</div>
+                      <div className="text-orange-300">Saboreos: {session.tastings}</div>
+                      <div className="text-blue-300">Regalos: {session.surprises}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSimulation(false)}
+                className="w-full py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         )}

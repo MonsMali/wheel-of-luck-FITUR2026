@@ -208,6 +208,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().saveState();
   },
 
+  // Sync session configuration (times, duration) from code WITHOUT losing runtime state
+  // This preserves: vouchersAwarded, isActive, actualStartTime, actualEndTime
+  syncSessionConfig: () => {
+    set((state) => ({
+      sessions: SESSIONS.map((defaultSession) => {
+        // Find the existing session state
+        const existingSession = state.sessions.find(s => s.id === defaultSession.id);
+        if (existingSession) {
+          // Merge: use new config (times, duration) but keep runtime state
+          return {
+            ...defaultSession,
+            isActive: existingSession.isActive,
+            vouchersAwarded: existingSession.vouchersAwarded,
+            actualStartTime: existingSession.actualStartTime,
+            actualEndTime: existingSession.actualEndTime,
+          };
+        }
+        return defaultSession;
+      }),
+    }));
+    get().saveState();
+  },
+
   adjustInventory: (type, amount) => {
     const { inventory } = get();
     const newAmount = Math.max(0, inventory[type] + amount);

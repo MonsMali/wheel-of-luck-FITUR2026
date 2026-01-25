@@ -71,4 +71,5 @@ export interface GameStore extends GameState {
   incrementSessionVoucher: (sessionId: string) => void;
   adjustInventory: (type: PrizeType, amount: number) => void;
   restartSession: (sessionId: string) => void;
+  syncSessionConfig: () => void;
 }
