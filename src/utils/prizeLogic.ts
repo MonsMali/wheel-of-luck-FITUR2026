@@ -69,10 +69,10 @@ export function selectPrize(
 
   // Check if vouchers are blocked for this session
   // Rule 1: No vouchers in first 15 spins (builds anticipation, prevents early jackpot)
-  // Rule 2: Max 1 voucher per session - if session already has one, block vouchers
+  // Rule 2: Max 2 vouchers per session - allows distributing 3 experiencias across 2 final sessions
   const tooEarlyForVoucher = sessionSpinCount < 15;
-  const alreadyAwardedVoucher = currentSession && currentSession.vouchersAwarded >= 1;
-  const voucherBlockedForSession = tooEarlyForVoucher || alreadyAwardedVoucher;
+  const alreadyAwardedMaxVouchers = currentSession && currentSession.vouchersAwarded >= 2;
+  const voucherBlockedForSession = tooEarlyForVoucher || alreadyAwardedMaxVouchers;
 
   // Simple weighted random selection based on remaining inventory
   const weights = calculateWeights(inventory);

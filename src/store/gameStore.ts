@@ -5,33 +5,30 @@ import { GameStore, PrizeInventory, PrizeType, Session, SpinRecord } from '@/typ
 
 const ADMIN_PIN = 'FITUR2026'; // Staff access PIN
 
-// Updated after session 2 (sat-13): 369 total spins so far
-// 5 experiencias left for 6 remaining sessions (max 1 per session)
-// 68 saboreos left
-// 949 regalos left
-// Total: 1022 prizes for 6 remaining sessions (~170 spins/session expected)
+// Final 2 sessions (Sunday 15:00 and 16:00): ~331 spins expected (165.5 per session)
+// 3 experiencias left (need max 2 per session to award all)
+// 24 saboreos left
+// 241 regalos left
+// Total: 268 prizes for ~331 spins (prizes will run out before spins end)
 const INITIAL_INVENTORY: PrizeInventory = {
-  voucher: 5,
-  tasting: 68,
-  surprise: 949,
+  voucher: 3,
+  tasting: 24,
+  surprise: 241,
 };
 
-// Sessions 1-2 done (sat-11, sat-13): 369 total spins
-// sat-11: 3 experiencias, 7 saboreo, 126 regalos (136 spins)
-// sat-13: 1 experiencia, 8 saboreo, 223 regalos (232 spins)
-// 6 sessions remaining
-// Sunday sessions are 45 minutes, Saturday sessions are 60 minutes
+// Final 2 Sunday sessions: 15:00 and 16:00 (45 min each)
+// Expected ~165.5 spins per session = ~331 total
 const SESSIONS: Session[] = [
-  // Saturday sessions (60 min each) - first two already completed
+  // Saturday sessions (completed)
   { id: 'sat-11', day: 'saturday', startTime: '11:00', endTime: '12:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 3, actualEndTime: '2026-01-24T11:00:00.000Z' },
   { id: 'sat-13', day: 'saturday', startTime: '13:00', endTime: '14:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 1, actualEndTime: '2026-01-24T13:00:00.000Z' },
-  { id: 'sat-16', day: 'saturday', startTime: '16:00', endTime: '17:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  { id: 'sat-18', day: 'saturday', startTime: '18:00', endTime: '19:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  // Sunday sessions (45 min each)
-  { id: 'sun-11', day: 'sunday', startTime: '11:00', endTime: '11:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  { id: 'sun-13', day: 'sunday', startTime: '13:00', endTime: '13:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
+  { id: 'sat-16', day: 'saturday', startTime: '16:00', endTime: '17:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 0, actualEndTime: '2026-01-25T16:00:00.000Z' },
+  { id: 'sat-18', day: 'saturday', startTime: '18:00', endTime: '19:00', durationMinutes: 60, isActive: false, targetVouchers: 0, vouchersAwarded: 0, actualEndTime: '2026-01-25T18:00:00.000Z' },
+  // Sunday sessions (first 2 completed, last 2 remaining)
+  { id: 'sun-11', day: 'sunday', startTime: '11:00', endTime: '11:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0, actualEndTime: '2026-01-26T11:00:00.000Z' },
+  { id: 'sun-13', day: 'sunday', startTime: '13:00', endTime: '13:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0, actualEndTime: '2026-01-26T13:00:00.000Z' },
+  { id: 'sun-15', day: 'sunday', startTime: '15:00', endTime: '15:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
   { id: 'sun-16', day: 'sunday', startTime: '16:00', endTime: '16:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
-  { id: 'sun-17', day: 'sunday', startTime: '17:00', endTime: '17:45', durationMinutes: 45, isActive: false, targetVouchers: 0, vouchersAwarded: 0 },
 ];
 
 const STORAGE_KEY = 'ruleta-algarve-state';
