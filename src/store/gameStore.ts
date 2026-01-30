@@ -11,9 +11,9 @@ const ADMIN_PIN = 'FITUR2026'; // Staff access PIN
 // 241 regalos left
 // Total: 268 prizes for ~331 spins (prizes will run out before spins end)
 const INITIAL_INVENTORY: PrizeInventory = {
-  voucher: 3,
-  tasting: 34,
-  surprise: 280,
+  voucher: 70,
+  tasting: 150,
+  surprise: 400,
 };
 
 // Final 2 Sunday sessions: 15:00 and 16:00 (45 min each)
